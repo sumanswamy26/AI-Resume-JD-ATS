@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>HireLens AI</title>
+<link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+
+<nav class="navbar">
+  <div class="logo">HireLens AI</div>
+</nav>
+
+<section class="hero">
+  <h1>AI Resume – JD ATS Match Analyzer</h1>
+  <p>Optimize your resume for jobs using AI-powered ATS analysis.</p>
+</section>
+
+<div class="container">
+  <form action="/analyze" method="POST" enctype="multipart/form-data" class="card">
+
+    <label>Upload Resume (PDF)</label>
+    <input type="file" name="resume" required>
+
+    <label>Paste Job Description</label>
+    <textarea name="jd" rows="10" placeholder="Paste job description here..." required></textarea>
+
+    <button type="submit">Analyze Resume</button>
+
+  </form>
+</div>
+
+</body>
+</html>
