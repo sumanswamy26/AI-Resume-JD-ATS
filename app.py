@@ -1,8 +1,6 @@
 from flask import Flask, render_template, request, session, redirect, url_for, flash
 import os
 import pdfplumber
-import webbrowser
-import threading
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
 from flask_sqlalchemy import SQLAlchemy
@@ -11,7 +9,7 @@ from werkzeug.security import generate_password_hash, check_password_hash
 app = Flask(__name__)
 
 # ================= CONFIG =================
-app.secret_key = "secret123"
+app.secret_key = "your-secret-key-123"
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///users.db'
 
 db = SQLAlchemy(app)
@@ -43,7 +41,7 @@ def extract_text(pdf_path):
                 text += page_text + " "
     return text.lower()
 
-# ================= MODEL =================
+# ================= DATABASE MODEL =================
 class User(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(100), unique=True, nullable=False)
@@ -128,7 +126,7 @@ def analyze():
     similarity_score = cosine_similarity(vectors[0:1], vectors[1:2])[0][0]
     similarity_score = round(similarity_score * 100)
 
-    # Skills
+    # Skills Matching
     matched = []
     missing = []
 
@@ -191,15 +189,8 @@ def analyze():
     )
 
 # ================= RUN =================
-
-def open_browser():
-    webbrowser.open("http://127.0.0.1:5000/login")   # opens login directly
-
 if __name__ == "__main__":
     with app.app_context():
         db.create_all()
 
-    # delay ensures server starts first
-    threading.Timer(1.5, open_browser).start()
-
-    app.run(host="0.0.0.0", port=5000, debug=True, use_reloader=False)
+    app.run(host="0.0.0.0", port=10000)
