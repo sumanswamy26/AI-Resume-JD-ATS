@@ -1,5 +1,4 @@
-<<!DOCTYPE html>
-
+<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -13,12 +12,20 @@
 <div class="auth-container">
 
   <div class="auth-card">
-
-```
 <h1 class="logo">HireLens AI</h1>
 <p class="sub-text">Smart Resume Analyzer</p>
 
 <h2>Login</h2>
+
+{% with messages = get_flashed_messages(with_categories=true) %}
+  {% if messages %}
+    <div class="auth-messages">
+      {% for category, message in messages %}
+        <div class="auth-message {{ category }}">{{ message }}</div>
+      {% endfor %}
+    </div>
+  {% endif %}
+{% endwith %}
 
 <form method="POST">
 
@@ -36,7 +43,6 @@
   Don't have an account?
   <a href="/register">Register</a>
 </p>
-```
 
   </div>
 

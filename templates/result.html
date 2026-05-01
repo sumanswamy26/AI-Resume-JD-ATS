@@ -9,8 +9,78 @@
 <body>
 
 <nav class="navbar">
-  <div class="logo">HireLens AI</div>
+  <div class="navbar-brand">
+    <div class="logo">HireLens AI</div>
+    <span class="brand-tag">AI Resume Analyzer</span>
+  </div>
+
+  <div class="navbar-actions">
+    <div class="profile-menu">
+      <button type="button" class="profile-chip" id="profileToggle" aria-expanded="false" aria-haspopup="true">
+        <div class="profile-avatar">{{ session.user[:1] | upper }}</div>
+        <div class="profile-meta">
+          <span class="profile-label">Logged in as</span>
+          <span class="profile-name">{{ session.user }}</span>
+        </div>
+        <span class="profile-caret">▾</span>
+      </button>
+
+      <div class="profile-dropdown" id="profileDropdown" hidden>
+        <form action="/logout" method="POST">
+          <button type="submit" class="dropdown-logout">Logout</button>
+        </form>
+      </div>
+    </div>
+  </div>
 </nav>
+
+<script>
+(function () {
+  const activeKey = "hirelens_browser_session";
+  if (!sessionStorage.getItem(activeKey)) {
+    fetch("/logout", {
+      method: "POST",
+      keepalive: true,
+      headers: { "X-Requested-With": "XMLHttpRequest" }
+    }).finally(function () {
+      window.location.href = "/login";
+    });
+  }
+})();
+
+(function () {
+  const toggle = document.getElementById("profileToggle");
+  const menu = document.getElementById("profileDropdown");
+
+  if (!toggle || !menu) return;
+
+  function closeMenu() {
+    menu.hidden = true;
+    toggle.setAttribute("aria-expanded", "false");
+  }
+
+  function openMenu() {
+    menu.hidden = false;
+    toggle.setAttribute("aria-expanded", "true");
+  }
+
+  toggle.addEventListener("click", function (event) {
+    event.stopPropagation();
+    if (menu.hidden) {
+      openMenu();
+    } else {
+      closeMenu();
+    }
+  });
+
+  document.addEventListener("click", closeMenu);
+  document.addEventListener("keydown", function (event) {
+    if (event.key === "Escape") {
+      closeMenu();
+    }
+  });
+})();
+</script>
 
 <div class="container">
 

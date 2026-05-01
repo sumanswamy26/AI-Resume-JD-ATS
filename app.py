@@ -1,5 +1,6 @@
 from flask import Flask, render_template, request, session, redirect, url_for, flash
 import os
+import secrets
 import pdfplumber
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
@@ -53,7 +54,11 @@ class User(db.Model):
 def home():
     if 'user' not in session:
         return redirect(url_for("login"))
-    return render_template("index.html")
+    return render_template(
+        "index.html",
+        login_token=request.args.get("login_token"),
+        browser_login_token=session.get("browser_login_token")
+    )
 
 # ---------- LOGIN ----------
 @app.route("/login", methods=["GET", "POST"])
@@ -65,15 +70,17 @@ def login():
         user = User.query.filter_by(username=username).first()
 
         if not user:
-            flash("User not found!")
+            flash("User not found!", "error")
             return redirect(url_for("login"))
 
         if not check_password_hash(user.password, password):
-            flash("Wrong password!")
+            flash("Wrong password!", "error")
             return redirect(url_for("login"))
 
         session["user"] = username
-        return redirect(url_for("home"))
+        browser_login_token = secrets.token_urlsafe(16)
+        session["browser_login_token"] = browser_login_token
+        return redirect(url_for("home", login_token=browser_login_token))
 
     return render_template("login.html")
 
@@ -85,22 +92,22 @@ def register():
         password = generate_password_hash(request.form["password"])
 
         if User.query.filter_by(username=username).first():
-            flash("User already exists!")
+            flash("User already exists!", "error")
             return redirect(url_for("register"))
 
         new_user = User(username=username, password=password)
         db.session.add(new_user)
         db.session.commit()
 
-        flash("Registered successfully! Please login.")
+        flash("User created successfully", "success")
         return redirect(url_for("login"))
 
     return render_template("register.html")
 
 # ---------- LOGOUT ----------
-@app.route("/logout")
+@app.route("/logout", methods=["GET", "POST"])
 def logout():
-    session.pop("user", None)
+    session.clear()
     return redirect(url_for("login"))
 
 # ---------- ANALYZE ----------
