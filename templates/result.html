@@ -6,99 +6,85 @@
 <title>Resume Analysis Result</title>
 <link rel="stylesheet" href="/static/style.css">
 </head>
-<body>
 
+<body {% if dark_mode %}class="dark-mode"{% endif %}>
+
+<!-- NAVBAR -->
 <nav class="navbar">
+
+  <button class="menu-toggle" id="menuToggle">☰</button>
+
   <div class="navbar-brand">
     <div class="logo">HireLens AI</div>
     <span class="brand-tag">AI Resume Analyzer</span>
   </div>
 
-  <div class="navbar-actions">
-    <div class="profile-menu">
-      <button type="button" class="profile-chip" id="profileToggle" aria-expanded="false" aria-haspopup="true">
-        <div class="profile-avatar">{{ session.user[:1] | upper }}</div>
-        <div class="profile-meta">
-          <span class="profile-label">Logged in as</span>
-          <span class="profile-name">{{ session.user }}</span>
-        </div>
-        <span class="profile-caret">▾</span>
-      </button>
+  <div class="navbar-links" id="navMenu">
+    <a href="/" class="nav-link">Dashboard</a>
+      <a href="/#upload" class="nav-link">Upload</a>
+    <a href="#results" class="nav-link">Results</a>
+  </div>
 
-      <div class="profile-dropdown" id="profileDropdown" hidden>
-        <form action="/logout" method="POST">
-          <button type="submit" class="dropdown-logout">Logout</button>
-        </form>
+  <div class="profile-menu">
+    <button type="button" class="profile-chip profile-toggle" id="profileToggle" aria-expanded="false" aria-controls="profileDropdown">
+      <div class="profile-avatar">{{ session.get('user', 'U')[:1]|upper }}</div>
+      <div class="profile-meta">
+        <span class="profile-label">Logged in as</span>
+        <span class="profile-name">{{ session.get('user', 'User') }}</span>
       </div>
+      <span class="profile-caret">▾</span>
+    </button>
+
+    <div class="profile-dropdown" id="profileDropdown">
+      <form action="/logout" method="POST">
+        <button type="submit" class="dropdown-logout">Logout</button>
+      </form>
     </div>
   </div>
+
 </nav>
 
+<!-- JS -->
 <script>
-(function () {
-  const activeKey = "hirelens_browser_session";
-  if (!sessionStorage.getItem(activeKey)) {
-    fetch("/logout", {
-      method: "POST",
-      keepalive: true,
-      headers: { "X-Requested-With": "XMLHttpRequest" }
-    }).finally(function () {
-      window.location.href = "/login";
-    });
-  }
-})();
+document.getElementById("menuToggle").onclick = function() {
+  document.getElementById("navMenu").classList.toggle("nav-open");
+};
 
-(function () {
-  const toggle = document.getElementById("profileToggle");
-  const menu = document.getElementById("profileDropdown");
+const profileToggle = document.getElementById("profileToggle");
+const profileMenu = document.querySelector(".profile-menu");
 
-  if (!toggle || !menu) return;
+profileToggle.onclick = function(event) {
+  event.stopPropagation();
+  profileMenu.classList.toggle("is-open");
+  profileToggle.setAttribute("aria-expanded", profileMenu.classList.contains("is-open"));
+};
 
-  function closeMenu() {
-    menu.hidden = true;
-    toggle.setAttribute("aria-expanded", "false");
-  }
-
-  function openMenu() {
-    menu.hidden = false;
-    toggle.setAttribute("aria-expanded", "true");
-  }
-
-  toggle.addEventListener("click", function (event) {
-    event.stopPropagation();
-    if (menu.hidden) {
-      openMenu();
-    } else {
-      closeMenu();
-    }
-  });
-
-  document.addEventListener("click", closeMenu);
-  document.addEventListener("keydown", function (event) {
-    if (event.key === "Escape") {
-      closeMenu();
-    }
-  });
-})();
+document.addEventListener("click", function() {
+  profileMenu.classList.remove("is-open");
+  profileToggle.setAttribute("aria-expanded", "false");
+});
 </script>
 
+<!-- MAIN -->
 <div class="container">
 
-<h1 class="center">Resume Analysis Report</h1>
+<div class="section-heading" id="results">
+  <p class="eyebrow">Analysis complete</p>
+  <h1 class="center">Resume Analysis Report</h1>
+</div>
 
-<!-- Score Card -->
+<!-- SCORE -->
 <div class="score-card">
     <h2>{{ score }}%</h2>
     <p>{{ rating }}</p>
 </div>
 
-<!-- Grid Cards -->
+<!-- GRID -->
 <div class="grid">
 
-<!-- Matched Skills -->
+<!-- MATCHED -->
 <div class="card">
 <h3>Matched Skills</h3>
-
 {% if matched %}
 <ul>
 {% for skill in matched %}
@@ -108,13 +94,11 @@
 {% else %}
 <p>No matched skills found.</p>
 {% endif %}
-
 </div>
 
-<!-- Missing Skills -->
+<!-- MISSING -->
 <div class="card">
 <h3>Missing Skills</h3>
-
 {% if missing %}
 <ul>
 {% for skill in missing %}
@@ -124,13 +108,11 @@
 {% else %}
 <p>No missing skills found.</p>
 {% endif %}
-
 </div>
 
-<!-- Missing Keywords -->
+<!-- KEYWORDS -->
 <div class="card">
 <h3>Missing Keywords</h3>
-
 {% if missing_keywords %}
 <ul>
 {% for word in missing_keywords %}
@@ -140,13 +122,11 @@
 {% else %}
 <p>No missing keywords found.</p>
 {% endif %}
-
 </div>
 
-<!-- Suggestions -->
+<!-- SUGGESTIONS -->
 <div class="card">
 <h3>Suggestions</h3>
-
 {% if suggestions %}
 <ul>
 {% for item in suggestions %}
@@ -154,29 +134,41 @@
 {% endfor %}
 </ul>
 {% else %}
-<p>Your resume already aligns well.</p>
+<p>Your resume is good.</p>
 {% endif %}
-
 </div>
 
-<!-- ATS Tips -->
+<!-- ATS -->
 <div class="card full">
-<h3>ATS Optimization Tips</h3>
-
+<h3>ATS Tips</h3>
 <ul>
 {% for tip in ats_tips %}
 <li>{{ tip }}</li>
 {% endfor %}
 </ul>
-
 </div>
 
 </div>
 
-<!-- Button -->
+<!-- BUTTONS -->
 <div class="center">
-<a href="/" class="back-btn">Analyze Another Resume</a>
+<a href="/download-report/{{ analysis_id }}" class="btn-secondary">📥 Download PDF</a>
+<a href="/" class="back-btn">← Dashboard</a>
 </div>
+
+<!-- INTERVIEW -->
+{% if interview_questions %}
+<div class="card full">
+<h3>🎤 Interview Questions</h3>
+
+<ul>
+{% for q in interview_questions %}
+<li>{{ q }}</li>
+{% endfor %}
+</ul>
+
+</div>
+{% endif %}
 
 </div>
 

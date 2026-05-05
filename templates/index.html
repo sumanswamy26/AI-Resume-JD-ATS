@@ -1,115 +1,165 @@
-<!DOCTYPE html>
+<<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>HireLens AI</title>
 <link rel="stylesheet" href="/static/style.css">
+
+<style>
+html {
+  scroll-behavior: smooth;
+}
+.feature-pill {
+  text-decoration: none;
+  cursor: pointer;
+}
+</style>
+
 </head>
 <body>
 
+<!-- ================= NAVBAR ================= -->
 <nav class="navbar">
+
+  <button class="menu-toggle" id="menuToggle">☰</button>
+
   <div class="navbar-brand">
     <div class="logo">HireLens AI</div>
     <span class="brand-tag">AI Resume Analyzer</span>
   </div>
 
-  <div class="navbar-actions">
-    <div class="profile-menu">
-      <button type="button" class="profile-chip" id="profileToggle" aria-expanded="false" aria-haspopup="true">
-        <div class="profile-avatar">{{ session.user[:1] | upper }}</div>
-        <div class="profile-meta">
-          <span class="profile-label">Logged in as</span>
-          <span class="profile-name">{{ session.user }}</span>
-        </div>
-        <span class="profile-caret">▾</span>
-      </button>
+  <div class="navbar-links" id="navMenu">
+    <a href="#hero">Dashboard</a>
+    <a href="#upload">Upload</a>
+    <a href="#ats">ATS</a>
+    <a href="#skills">Skills</a>
+    <a href="#suggestions">Suggestions</a>
+  </div>
 
-      <div class="profile-dropdown" id="profileDropdown" hidden>
-        <form action="/logout" method="POST">
-          <button type="submit" class="dropdown-logout">Logout</button>
-        </form>
+  <div class="profile-menu">
+    <button type="button" class="profile-chip profile-toggle" id="profileToggle" aria-expanded="false" aria-controls="profileDropdown">
+      <div class="profile-avatar">{{ session.get('user', 'U')[:1]|upper }}</div>
+      <div class="profile-meta">
+        <span class="profile-label">Logged in as</span>
+        <span class="profile-name">{{ session.get('user', 'User') }}</span>
       </div>
+      <span class="profile-caret">▾</span>
+    </button>
+
+    <div class="profile-dropdown" id="profileDropdown">
+      <form action="/logout" method="POST">
+        <button type="submit" class="dropdown-logout">Logout</button>
+      </form>
     </div>
   </div>
+
 </nav>
 
-<script>
-(function () {
-  const activeKey = "hirelens_browser_session";
-  const loginToken = "{{ login_token or '' }}";
-  const serverToken = "{{ browser_login_token or '' }}";
-  const hasActiveSession = sessionStorage.getItem(activeKey) === "1";
-
-  if (loginToken && serverToken && loginToken === serverToken) {
-    sessionStorage.setItem(activeKey, "1");
-    window.history.replaceState({}, document.title, window.location.pathname);
-    return;
-  }
-
-  if (!hasActiveSession) {
-    fetch("/logout", {
-      method: "POST",
-      keepalive: true,
-      headers: { "X-Requested-With": "XMLHttpRequest" }
-    }).finally(function () {
-      window.location.href = "/login";
-    });
-  }
-})();
-
-(function () {
-  const toggle = document.getElementById("profileToggle");
-  const menu = document.getElementById("profileDropdown");
-
-  if (!toggle || !menu) return;
-
-  function closeMenu() {
-    menu.hidden = true;
-    toggle.setAttribute("aria-expanded", "false");
-  }
-
-  function openMenu() {
-    menu.hidden = false;
-    toggle.setAttribute("aria-expanded", "true");
-  }
-
-  toggle.addEventListener("click", function (event) {
-    event.stopPropagation();
-    if (menu.hidden) {
-      openMenu();
-    } else {
-      closeMenu();
-    }
-  });
-
-  document.addEventListener("click", closeMenu);
-  document.addEventListener("keydown", function (event) {
-    if (event.key === "Escape") {
-      closeMenu();
-    }
-  });
-})();
-</script>
-
-<section class="hero">
+<!-- ================= HERO ================= -->
+<section class="hero" id="hero">
   <h1>AI Resume – JD ATS Match Analyzer</h1>
   <p>Optimize your resume for jobs using AI-powered ATS analysis.</p>
 </section>
 
 <div class="container">
-  <form action="/analyze" method="POST" enctype="multipart/form-data" class="card">
+
+  <!-- FEATURES -->
+  <div class="feature-strip">
+    <a href="#ats" class="feature-pill">ATS scoring</a>
+    <a href="#skills" class="feature-pill">Skill gap analysis</a>
+    <a href="#suggestions" class="feature-pill">Actionable suggestions</a>
+    <a href="#upload" class="feature-pill">Fast PDF upload</a>
+  </div>
+
+  <!-- ================= UPLOAD ================= -->
+  <form action="/analyze" method="POST" enctype="multipart/form-data" class="card" id="upload">
 
     <label>Upload Resume (PDF)</label>
     <input type="file" name="resume" required>
 
     <label>Paste Job Description</label>
-    <textarea name="jd" rows="10" placeholder="Paste job description here..." required></textarea>
+    <textarea name="jd" rows="8" placeholder="Paste job description here..." required></textarea>
 
     <button type="submit">Analyze Resume</button>
 
   </form>
+
+  <!-- ================= ATS RESULT ================= -->
+  <div id="ats" class="card">
+    <h3>ATS Score</h3>
+
+    {% if score %}
+      <h2>{{ score }}%</h2>
+      <p><b>{{ rating }}</b></p>
+    {% else %}
+      <p>Your ATS score will appear here after analysis.</p>
+    {% endif %}
+  </div>
+
+  <!-- ================= SKILLS ================= -->
+  <div id="skills" class="card">
+    <h3>Skill Gap Analysis</h3>
+
+    {% if matched %}
+      <b>Matched Skills:</b>
+      <ul>
+        {% for skill in matched %}
+          <li>{{ skill }}</li>
+        {% endfor %}
+      </ul>
+
+      <b>Missing Skills:</b>
+      <ul>
+        {% for skill in missing %}
+          <li>{{ skill }}</li>
+        {% endfor %}
+      </ul>
+    {% else %}
+      <p>Matched and missing skills will be displayed here.</p>
+    {% endif %}
+  </div>
+
+  <!-- ================= SUGGESTIONS ================= -->
+  <div id="suggestions" class="card">
+    <h3>Suggestions</h3>
+
+    {% if suggestions %}
+      <ul>
+        {% for s in suggestions %}
+          <li>{{ s }}</li>
+        {% endfor %}
+      </ul>
+    {% else %}
+      <p>Resume improvement suggestions will be shown here.</p>
+    {% endif %}
+  </div>
+
 </div>
+
+<!-- ================= JS ================= -->
+<script>
+
+// Hamburger Menu
+document.getElementById("menuToggle").onclick = function() {
+  document.getElementById("navMenu").classList.toggle("nav-open");
+};
+
+const profileToggle = document.getElementById("profileToggle");
+const profileMenu = document.querySelector(".profile-menu");
+
+profileToggle.onclick = function(event) {
+  event.stopPropagation();
+  profileMenu.classList.toggle("is-open");
+  profileToggle.setAttribute("aria-expanded", profileMenu.classList.contains("is-open"));
+};
+
+document.addEventListener("click", function() {
+  profileMenu.classList.remove("is-open");
+  profileToggle.setAttribute("aria-expanded", "false");
+});
+
+</script>
 
 </body>
 </html>

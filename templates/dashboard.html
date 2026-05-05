@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dashboard - HireLens AI</title>
+<link rel="stylesheet" href="/static/style.css">
+</head>
+
+<body {% if dark_mode %}class="dark-mode"{% endif %}>
+
+<!-- ================= NAVBAR ================= -->
+<nav class="navbar">
+  <button class="menu-toggle" id="menuToggle">☰</button>
+
+  <div class="navbar-brand">
+    <div class="logo">HireLens AI</div>
+    <span class="brand-tag">AI Resume Analyzer</span>
+  </div>
+
+  <div class="navbar-links" id="navMenu">
+    <a href="#dashboard">Dashboard</a>
+    <a href="#upload-section">Upload</a>
+    <a href="#history">History</a>
+  </div>
+
+  <div class="profile-menu">
+    <button type="button" class="profile-chip profile-toggle" id="profileToggle" aria-expanded="false" aria-controls="profileDropdown">
+      <div class="profile-avatar">{{ session.get('user', 'U')[:1]|upper }}</div>
+      <div class="profile-meta">
+        <span class="profile-label">Logged in as</span>
+        <span class="profile-name">{{ session.get('user', 'User') }}</span>
+      </div>
+      <span class="profile-caret">▾</span>
+    </button>
+
+    <div class="profile-dropdown" id="profileDropdown">
+      <form action="/logout" method="POST">
+        <button type="submit" class="dropdown-logout">Logout</button>
+      </form>
+    </div>
+  </div>
+</nav>
+
+<!-- ================= HERO ================= -->
+<section class="hero-mini" id="dashboard">
+  <h1>📊 Your Resume Dashboard</h1>
+  <p>Track improvements and optimize your resume</p>
+</section>
+
+<!-- ================= MAIN ================= -->
+<div class="container">
+
+  <!-- STATS -->
+  <div class="stats-grid">
+    <div class="stat-card">
+      <h3>Resumes</h3>
+      <p>{{ resumes | length }}</p>
+    </div>
+
+    <div class="stat-card">
+      <h3>Best Score</h3>
+      <p>
+        {% if resumes %}
+        {{ (resumes | map(attribute='best_score') | max) or 0 }}%
+        {% else %}
+        0%
+        {% endif %}
+      </p>
+    </div>
+
+    <div class="stat-card">
+      <h3>Total Analyses</h3>
+      <p>{{ analyses | length }}</p>
+    </div>
+  </div>
+
+  <!-- CHART -->
+  {% if analyses %}
+  <div class="card">
+    <h3>📉 Score Improvement Trend</h3>
+    <canvas id="scoreChart" height="100"></canvas>
+  </div>
+  {% endif %}
+
+  <!-- RESUMES -->
+  <div class="card">
+    <h3>📄 Your Resumes</h3>
+
+    {% if resumes %}
+      {% for resume in resumes %}
+      <div class="resume-item">
+        <h4>{{ resume.name }}</h4>
+        <p>Best Score: {{ resume.best_score }}%</p>
+      </div>
+      {% endfor %}
+    {% else %}
+      <p>No resumes yet</p>
+    {% endif %}
+  </div>
+
+  <!-- HISTORY -->
+  <div class="card" id="history">
+    <h3>📊 Recent Analyses</h3>
+
+    {% if analyses %}
+      {% for analysis in analyses %}
+      <div class="analysis-item">
+        <strong>{{ analysis.jd_title }}</strong>
+        <p>{{ analysis.match_score }}% - {{ analysis.rating }}</p>
+      </div>
+      {% endfor %}
+    {% else %}
+      <p>No data</p>
+    {% endif %}
+  </div>
+
+  <!-- UPLOAD -->
+  <div class="card" id="upload-section">
+    <h3>⬆ Upload Resume</h3>
+
+    <form action="/analyze" method="POST" enctype="multipart/form-data">
+      <input type="text" name="resume_name" placeholder="Resume name" required>
+      <input type="file" name="resume" required>
+      <input type="text" name="jd_title" placeholder="Job title" required>
+      <textarea name="jd" placeholder="Paste job description" required></textarea>
+
+      <button type="submit">Analyze Resume</button>
+    </form>
+  </div>
+
+</div>
+
+<!-- ================= JS ================= -->
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<script>
+// Navbar toggle
+document.getElementById("menuToggle").onclick = function() {
+  document.getElementById("navMenu").classList.toggle("nav-open");
+};
+
+const profileToggle = document.getElementById("profileToggle");
+const profileMenu = document.querySelector(".profile-menu");
+
+profileToggle.onclick = function(event) {
+  event.stopPropagation();
+  profileMenu.classList.toggle("is-open");
+  profileToggle.setAttribute("aria-expanded", profileMenu.classList.contains("is-open"));
+};
+
+document.addEventListener("click", function() {
+  profileMenu.classList.remove("is-open");
+  profileToggle.setAttribute("aria-expanded", "false");
+});
+
+// Chart
+fetch('/api/score-history')
+.then(res => res.json())
+.then(data => {
+  const ctx = document.getElementById('scoreChart');
+
+  if (!ctx || !data.scores || data.scores.length === 0) return;
+
+  new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: data.dates,
+      datasets: [{
+        label: 'ATS Score',
+        data: data.scores,
+        borderColor: '#0F766E',
+        backgroundColor: 'rgba(15,118,110,0.1)',
+        fill: true,
+        tension: 0.3
+      }]
+    },
+    options: {
+      responsive: true,
+      plugins: {
+        legend: { display: false }
+      },
+      scales: {
+        y: {
+          beginAtZero: true,
+          max: 100
+        }
+      }
+    }
+  });
+});
+</script>
+
+</body>
+</html>
