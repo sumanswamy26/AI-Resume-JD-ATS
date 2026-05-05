@@ -66,7 +66,13 @@ text-transform:uppercase;
 color:#94A3B8;
 }
 
-.navbar-links,
+.navbar-links{
+display:none;
+align-items:center;
+gap:14px;
+margin-left:auto;
+}
+
 .navbar-actions{
 display:flex;
 align-items:center;
@@ -75,7 +81,7 @@ margin-left:auto;
 }
 
 .menu-toggle{
-display:none;
+display:inline-flex;
 align-items:center;
 justify-content:center;
 width:48px;
@@ -851,4 +857,47 @@ background: rgba(255, 255, 255, 0.1);
 }
 html {
   scroll-behavior: smooth;
+}
+
+/* Desktop: dropdown behaviour when `.nav-open` is toggled (menu button) */
+.navbar-links.nav-open{
+  position:absolute;
+  top:calc(100% + 10px);
+  left:16px;
+  right:auto;
+  display:flex;
+  flex-direction:column;
+  background:var(--surface);
+  color:var(--text);
+  padding:10px;
+  border-radius:12px;
+  box-shadow:0 18px 40px rgba(2,6,23,0.25);
+  border:1px solid var(--line);
+  min-width:180px;
+  z-index:25;
+}
+
+.navbar-links.nav-open a{
+  color:var(--text);
+  padding:10px 12px;
+  border-radius:8px;
+  text-decoration:none;
+}
+
+.dark-mode .navbar-links.nav-open{
+  background:rgba(15,23,42,0.98);
+  border-color:rgba(255,255,255,0.06);
+}
+
+/* Mobile override: keep nav static and full-width when open */
+@media(max-width:768px){
+  .navbar-links.nav-open{
+    position:static;
+    box-shadow:none;
+    border-radius:0;
+    padding-top:10px;
+    background:transparent;
+    border:none;
+    min-width:0;
+  }
 }
