@@ -21,6 +21,7 @@
   <div class="navbar-links" id="navMenu">
     <a href="/" class="nav-link">Home</a>
     <a href="/dashboard" class="nav-link">Dashboard</a>
+    <a href="/chat-history" class="nav-link">Chat History</a>
     <a href="/settings" class="nav-link">Settings</a>
   </div>
 
@@ -123,6 +124,8 @@
 
 </div>
 
+{% include "_chatbot_widget.html" %}
+
 <!-- FOOTER -->
 <footer>
   <div class="footer-bottom">
@@ -132,23 +135,35 @@
 
 <!-- JS -->
 <script>
-// Navbar toggle
-document.getElementById("menuToggle").onclick = function() {
-  document.getElementById("navMenu").classList.toggle("nav-open");
-};
+document.addEventListener('DOMContentLoaded', function() {
+  // Hamburger menu
+  const menuToggle = document.getElementById("menuToggle");
+  const navMenu = document.getElementById("navMenu");
+  
+  if (menuToggle && navMenu) {
+    menuToggle.onclick = function() {
+      navMenu.classList.toggle("nav-open");
+    };
+  }
 
-const profileToggle = document.getElementById("profileToggle");
-const profileMenu = document.querySelector(".profile-menu");
+  // Profile menu
+  const profileToggle = document.getElementById("profileToggle");
+  const profileMenu = document.querySelector(".profile-menu");
 
-profileToggle.onclick = function(event) {
-  event.stopPropagation();
-  profileMenu.classList.toggle("is-open");
-  profileToggle.setAttribute("aria-expanded", profileMenu.classList.contains("is-open"));
-};
+  if (profileToggle && profileMenu) {
+    profileToggle.onclick = function(event) {
+      event.stopPropagation();
+      profileMenu.classList.toggle("is-open");
+      profileToggle.setAttribute("aria-expanded", profileMenu.classList.contains("is-open"));
+    };
 
-document.addEventListener("click", function() {
-  profileMenu.classList.remove("is-open");
-  profileToggle.setAttribute("aria-expanded", "false");
+    document.addEventListener("click", function(e) {
+      if (!profileMenu.contains(e.target)) {
+        profileMenu.classList.remove("is-open");
+        profileToggle.setAttribute("aria-expanded", "false");
+      }
+    });
+  }
 });
 </script>
 

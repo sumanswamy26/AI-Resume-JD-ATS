@@ -68,27 +68,36 @@
 
 <!-- JS -->
 <script>
+document.addEventListener('DOMContentLoaded', function() {
+  // Hamburger menu
+  const menuToggle = document.getElementById("menuToggle");
+  const navMenu = document.getElementById("navMenu");
+  
+  if (menuToggle && navMenu) {
+    menuToggle.onclick = function () {
+      navMenu.classList.toggle("nav-open");
+    };
+  }
 
-document.getElementById("menuToggle").onclick = function () {
-    document.getElementById("navMenu").classList.toggle("nav-open");
-};
+  // Profile menu
+  const profileToggle = document.getElementById("profileToggle");
+  const profileMenu = document.querySelector(".profile-menu");
 
-const profileToggle = document.getElementById("profileToggle");
-const profileMenu = document.querySelector(".profile-menu");
+  if (profileToggle && profileMenu) {
+    profileToggle.onclick = function (e) {
+      e.stopPropagation();
+      profileMenu.classList.toggle("is-open");
+      profileToggle.setAttribute("aria-expanded", profileMenu.classList.contains("is-open"));
+    };
 
-profileToggle.onclick = function (e) {
-
-    e.stopPropagation();
-
-    profileMenu.classList.toggle("is-open");
-};
-
-document.addEventListener("click", function () {
-
-    profileMenu.classList.remove("is-open");
-
+    document.addEventListener("click", function (e) {
+      if (!profileMenu.contains(e.target)) {
+        profileMenu.classList.remove("is-open");
+        profileToggle.setAttribute("aria-expanded", "false");
+      }
+    });
+  }
 });
-
 </script>
 
 <!-- MAIN -->
@@ -109,8 +118,24 @@ document.addEventListener("click", function () {
     </div>
 
     <div class="ats-meta-item">
-      📅 Generated:
-      <strong>Today</strong>
+      🏢 Company:
+      <strong>{{ company_name }}</strong>
+    </div>
+
+    <div class="ats-meta-item">
+      ✅ Fit Level:
+      <strong style="color:
+        {% if fit_level == 'Perfect Fit' %}
+          #10b981
+        {% elif fit_level == 'Strong Fit' %}
+          #3b82f6
+        {% elif fit_level == 'Good Fit' %}
+          #f59e0b
+        {% else %}
+          #ef4444
+        {% endif %};">
+        {{ fit_level }}
+      </strong>
     </div>
 
     <div class="ats-meta-item">
@@ -237,6 +262,78 @@ document.addEventListener("click", function () {
 
     </div>
 
+  </div>
+
+</div>
+
+<!-- FIT FOR COMPANY SECTION -->
+<div class="analysis-section" style="background: linear-gradient(135deg, #ECFEFF, #F0FDFA); border: 2px solid #0F766E; border-radius: 14px; padding: 28px; margin-bottom: 30px;">
+
+  <div class="section-header">
+    <span class="section-icon" style="font-size: 28px;">🎯</span>
+    <div>
+      <div class="section-title" style="font-size: 22px; color: #0F766E;">
+        Your Fit for {{ company_name }}
+      </div>
+      <div class="section-subtitle" style="font-size: 14px;">
+        Resume compatibility assessment
+      </div>
+    </div>
+  </div>
+
+  <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 16px; margin-top: 20px;">
+    <div style="background: white; padding: 20px; border-radius: 12px; text-align: center; border: 1px solid #CBD5E1;">
+      <div style="font-size: 32px; font-weight: 700; color: 
+        {% if fit_level == 'Perfect Fit' %}
+          #10b981
+        {% elif fit_level == 'Strong Fit' %}
+          #3b82f6
+        {% elif fit_level == 'Good Fit' %}
+          #f59e0b
+        {% else %}
+          #ef4444
+        {% endif %};
+        margin-bottom: 8px;">
+        {{ fit_level }}
+      </div>
+      <div style="font-size: 13px; color: #64748B; font-weight: 600;">Overall Fit Level</div>
+    </div>
+
+    <div style="background: white; padding: 20px; border-radius: 12px; text-align: center; border: 1px solid #CBD5E1;">
+      <div style="font-size: 28px; font-weight: 700; color: #0F766E; margin-bottom: 8px;">
+        {% set total_skills = matched|length + missing|length %}
+        {% if total_skills > 0 %}
+          {{ ((matched|length / total_skills) * 100)|int }}%
+        {% else %}
+          0%
+        {% endif %}
+      </div>
+      <div style="font-size: 13px; color: #64748B; font-weight: 600;">Skills Match Rate</div>
+    </div>
+
+    <div style="background: white; padding: 20px; border-radius: 12px; text-align: center; border: 1px solid #CBD5E1;">
+      <div style="font-size: 28px; font-weight: 700; color: #0F766E; margin-bottom: 8px;">{{ matched|length }}</div>
+      <div style="font-size: 13px; color: #64748B; font-weight: 600;">Skills Already Matched</div>
+    </div>
+
+    <div style="background: white; padding: 20px; border-radius: 12px; text-align: center; border: 1px solid #CBD5E1;">
+      <div style="font-size: 28px; font-weight: 700; color: #ef4444; margin-bottom: 8px;">{{ missing|length }}</div>
+      <div style="font-size: 13px; color: #64748B; font-weight: 600;">Skills to Develop</div>
+    </div>
+  </div>
+
+  <div style="margin-top: 20px; padding: 16px; background: white; border-radius: 12px; border-left: 4px solid #0F766E;">
+    <p style="margin: 0; color: #334155; font-size: 14px; line-height: 1.6;">
+      {% if score >= 85 %}
+        <strong style="color: #10b981;">✓ Your resume is an excellent match for this position!</strong> Your skills align well with the job requirements. Focus on highlighting your achievements and quantifiable results.
+      {% elif score >= 75 %}
+        <strong style="color: #3b82f6;">✓ Your resume is a strong match for this position.</strong> You have most required skills. Consider adding the missing skills or highlighting relevant experience in these areas.
+      {% elif score >= 60 %}
+        <strong style="color: #f59e0b;">⚠ Your resume is a good match for this position,</strong> but there's room for improvement. Add the missing skills and relevant keywords to increase your chances of getting past the ATS.
+      {% else %}
+        <strong style="color: #ef4444;">✗ Your resume needs significant improvement for this position.</strong> Add the missing core skills and restructure your resume to better match the job requirements.
+      {% endif %}
+    </p>
   </div>
 
 </div>
@@ -368,6 +465,45 @@ document.addEventListener("click", function () {
 
 </div>
 
+<!-- RECOMMENDATIONS -->
+<div class="analysis-section">
+
+  <div class="section-header">
+
+    <span class="section-icon">✨</span>
+
+    <div>
+
+      <div class="section-title">
+        AI Recommendations
+      </div>
+
+      <div class="section-subtitle">
+        Personalized next steps based on your analysis
+      </div>
+
+    </div>
+
+  </div>
+
+  {% if recommendations %}
+
+    <ul class="tips-list">
+
+      {% for item in recommendations %}
+
+        <li>
+          {{ item }}
+        </li>
+
+      {% endfor %}
+
+    </ul>
+
+  {% endif %}
+
+</div>
+
 <!-- SUGGESTIONS -->
 <div class="analysis-section">
 
@@ -466,6 +602,8 @@ document.addEventListener("click", function () {
 </div>
 
 </div>
+
+{% include "_chatbot_widget.html" %}
 
 </body>
 </html>

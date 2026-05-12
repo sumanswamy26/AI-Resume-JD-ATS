@@ -23,6 +23,7 @@
   <div class="navbar-links" id="navMenu">
     <a href="/" class="nav-link">Home</a>
     <a href="/dashboard" class="nav-link">Dashboard</a>
+    <a href="/chat-history" class="nav-link">Chat History</a>
     <a href="/profile" class="nav-link">Profile</a>
     <a href="/" class="nav-link">New Analysis</a>
   </div>
@@ -201,6 +202,24 @@
                 </strong>
               </p>
 
+              <div style="margin-top:8px; display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+                <div style="font-size:12px; padding:6px 8px; border-radius:8px; background:#F1F5F9; color:#0F172A;">
+                  Status: <strong>{{ resume.analysis_status }}</strong>
+                </div>
+
+                {% if resume.latest_matched %}
+                <div style="font-size:12px; padding:6px 8px; border-radius:8px; background:#ECFEFF; color:#0F766E;">
+                  Matched: {{ resume.latest_matched[:4] | join(', ') }}
+                </div>
+                {% endif %}
+
+                {% if resume.latest_missing %}
+                <div style="font-size:12px; padding:6px 8px; border-radius:8px; background:#FEF3F2; color:#B91C1C;">
+                  Missing: {{ resume.latest_missing[:4] | join(', ') }}
+                </div>
+                {% endif %}
+              </div>
+
             </div>
 
             <div
@@ -222,28 +241,57 @@
                 {{ resume.created_at.strftime('%b %d, %Y') }}
               </div>
 
-              <form
-                action="/delete-resume/{{ resume.id }}"
-                method="POST"
-                onsubmit="return confirm('Delete this resume?')"
-              >
+              <div style="display:flex; gap:8px; align-items:center;">
 
-                <button
-                  type="submit"
-                  style="
-                  background:#FEE2E2;
-                  color:#B91C1C;
-                  border:none;
-                  padding:8px 14px;
+                {% if resume.latest_analysis %}
+                <a href="/analysis/{{ resume.latest_analysis.id }}" style="
+                  background:#0F766E;
+                  color:white;
+                  padding:8px 12px;
                   border-radius:8px;
-                  cursor:pointer;
+                  text-decoration:none;
                   font-weight:600;
-                  "
-                >
-                  Delete
-                </button>
+                ">View Analysis</a>
 
-              </form>
+                <div style="width:140px;">
+                  <div style="background:#E6FFFA; border-radius:8px; height:10px; overflow:hidden;">
+                    <div style="background:#0F766E; height:10px; width:{{ resume.latest_analysis.match_score }}%;"></div>
+                  </div>
+                  <div style="font-size:11px; color:#64748B; text-align:center; margin-top:4px;">
+                    {{ resume.latest_analysis.match_score }}%
+                  </div>
+                </div>
+
+                {% else %}
+
+                <div style="font-size:13px; color:#64748B;">Not analyzed</div>
+
+                {% endif %}
+
+                <form
+                  action="/delete-resume/{{ resume.id }}"
+                  method="POST"
+                  onsubmit="return confirm('Delete this resume?')"
+                >
+
+                  <button
+                    type="submit"
+                    style="
+                    background:#FEE2E2;
+                    color:#B91C1C;
+                    border:none;
+                    padding:8px 14px;
+                    border-radius:8px;
+                    cursor:pointer;
+                    font-weight:600;
+                    "
+                  >
+                    Delete
+                  </button>
+
+                </form>
+
+              </div>
 
             </div>
 
@@ -433,6 +481,8 @@
 
 </div>
 
+{% include "_chatbot_widget.html" %}
+
 <!-- ================= FOOTER ================= -->
 <footer>
 
@@ -449,32 +499,36 @@
 
 <!-- ================= JS ================= -->
 <script>
+document.addEventListener('DOMContentLoaded', function() {
+  // Hamburger menu
+  const menuToggle = document.getElementById("menuToggle");
+  const navMenu = document.getElementById("navMenu");
+  
+  if (menuToggle && navMenu) {
+    menuToggle.onclick = function () {
+      navMenu.classList.toggle("nav-open");
+    };
+  }
 
-document.getElementById("menuToggle").onclick = function () {
+  // Profile menu
+  const profileToggle = document.getElementById("profileToggle");
+  const profileMenu = document.querySelector(".profile-menu");
 
-  document
-    .getElementById("navMenu")
-    .classList.toggle("nav-open");
-};
+  if (profileToggle && profileMenu) {
+    profileToggle.onclick = function(event) {
+      event.stopPropagation();
+      profileMenu.classList.toggle("is-open");
+      profileToggle.setAttribute("aria-expanded", profileMenu.classList.contains("is-open"));
+    };
 
-const profileToggle =
-  document.getElementById("profileToggle");
-
-const profileMenu =
-  document.querySelector(".profile-menu");
-
-profileToggle.onclick = function(event) {
-
-  event.stopPropagation();
-
-  profileMenu.classList.toggle("is-open");
-};
-
-document.addEventListener("click", function () {
-
-  profileMenu.classList.remove("is-open");
+    document.addEventListener("click", function (e) {
+      if (!profileMenu.contains(e.target)) {
+        profileMenu.classList.remove("is-open");
+        profileToggle.setAttribute("aria-expanded", "false");
+      }
+    });
+  }
 });
-
 </script>
 
 </body>

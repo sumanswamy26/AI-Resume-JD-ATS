@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Conversation History - HireLens AI</title>
+<link rel="stylesheet" href="/static/style.css">
+</head>
+
+<body {% if dark_mode %}class="dark-mode"{% endif %}>
+
+<nav class="navbar">
+  <button class="menu-toggle" id="menuToggle">☰</button>
+
+  <div class="navbar-brand">
+    <div class="logo">HireLens AI</div>
+    <span class="brand-tag">Resume Analyzer</span>
+  </div>
+
+  <div class="navbar-links" id="navMenu">
+    <a href="/" class="nav-link">Home</a>
+    <a href="/dashboard" class="nav-link">Dashboard</a>
+    <a href="/chat-history" class="nav-link">Chat History</a>
+    <a href="/settings" class="nav-link">Settings</a>
+  </div>
+
+  <div class="profile-menu">
+    <button type="button" class="profile-chip profile-toggle" id="profileToggle" aria-expanded="false" aria-controls="profileDropdown">
+      <div class="profile-avatar">{{ session.get('user', 'U')[:1]|upper }}</div>
+      <div class="profile-meta">
+        <span class="profile-label">Logged in as</span>
+        <span class="profile-name">{{ session.get('user', 'User') }}</span>
+      </div>
+      <span class="profile-caret">▾</span>
+    </button>
+
+    <div class="profile-dropdown" id="profileDropdown">
+      <a href="/profile" class="dropdown-item">👤 Profile</a>
+      <a href="/settings" class="dropdown-item">⚙️ Settings</a>
+      <form action="/logout" method="GET" style="margin:0;">
+        <button type="submit" class="dropdown-logout">Logout</button>
+      </form>
+    </div>
+  </div>
+</nav>
+
+<section class="hero-mini">
+  <h1>🧠 Resume Assistant Chat</h1>
+  <p>Type anything and chat with your assistant in real time.</p>
+</section>
+
+<div class="container" style="padding-top: 28px;">
+  <div class="card" style="padding: 0; overflow: hidden; margin-bottom: 20px;">
+    <div class="assistant-chat-shell" id="assistantChatShell" data-chat-context='{{ chatbot_context | default({}) | tojson }}'>
+      <div class="assistant-chat-header">
+        <div>
+          <h2 style="font-size: 20px; margin-bottom: 6px;">Chat With Resume Assistant</h2>
+          <p style="font-size: 13px; color:#64748B;">Ask whatever you want: resume edits, ATS score meaning, interview prep, keyword fixes.</p>
+        </div>
+      </div>
+
+      <div class="assistant-chat-messages" id="assistantChatMessages" role="log" aria-live="polite">
+        {% for item in chat_messages|reverse %}
+          <div class="assistant-chat-message {% if item.role == 'assistant' %}bot{% else %}user{% endif %}" data-message="{{ item.message | replace('"', '&quot;') }}"></div>
+        {% endfor %}
+      </div>
+
+      <div class="assistant-chat-quick-actions">
+        <button type="button" class="chatbot-chip" data-prompt="How do I improve my ATS score quickly?">Boost ATS score</button>
+        <button type="button" class="chatbot-chip" data-prompt="Rewrite one project bullet with measurable impact.">Rewrite bullet</button>
+        <button type="button" class="chatbot-chip" data-prompt="What skills am I missing for this role?">Missing skills</button>
+      </div>
+
+      <form id="assistantChatForm" class="assistant-chat-form">
+        <input type="text" id="assistantChatInput" placeholder="Type your question here and press Enter..." autocomplete="off" />
+        <button type="submit" class="btn-primary" style="padding: 12px 18px;">Send</button>
+      </form>
+    </div>
+  </div>
+
+  <div class="card" style="padding: 22px; margin-bottom: 20px;">
+    <div style="display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap: wrap;">
+      <div>
+        <h2 style="font-size: 20px; margin-bottom: 6px;">Conversation Tools</h2>
+        <p style="color:#64748B; font-size: 14px;">Total messages: {{ chat_messages|length }}</p>
+      </div>
+      <div style="display:flex; gap:10px; flex-wrap: wrap;">
+        <a href="/chat/export" class="btn-secondary" style="text-decoration:none;">⬇ Export JSON</a>
+        <form method="POST" action="/chat/delete-all" onsubmit="return confirm('Delete all chat messages? This cannot be undone.');">
+          <button type="submit" class="btn-primary" style="background: linear-gradient(135deg, #DC2626, #EF4444);">🗑 Delete All</button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <div class="card" style="padding: 0; overflow: hidden;">
+    {% if chat_messages %}
+      {% for item in chat_messages %}
+      <div style="padding: 18px 20px; border-bottom: 1px solid rgba(216,224,234,0.7);">
+        <div style="display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom: 10px; flex-wrap: wrap;">
+          <div style="display:flex; align-items:center; gap:10px;">
+            <span style="font-weight:700; color:{% if item.role == 'assistant' %}#0F766E{% else %}#1D4ED8{% endif %};">
+              {% if item.role == 'assistant' %}Assistant{% else %}You{% endif %}
+            </span>
+            <span style="font-size: 12px; color: #64748B;">{{ item.created_at.strftime('%Y-%m-%d %H:%M') }}</span>
+          </div>
+
+          <form method="POST" action="/chat/delete/{{ item.id }}" onsubmit="return confirm('Delete this message?');">
+            <button type="submit" class="btn-secondary" style="padding:8px 12px; font-size:12px;">Delete</button>
+          </form>
+        </div>
+
+        <p style="font-size:14px; line-height:1.6; color:#0F172A; margin: 0; white-space: pre-wrap;">{{ item.message }}</p>
+      </div>
+      {% endfor %}
+    {% else %}
+      <div style="padding: 26px; text-align:center; color:#64748B;">No chat messages yet.</div>
+    {% endif %}
+  </div>
+</div>
+
+<footer>
+  <div class="footer-bottom">
+    <p>&copy; 2026 HireLens AI. Optimizing resumes for careers.</p>
+  </div>
+</footer>
+
+<script>
+document.getElementById("menuToggle").onclick = function() {
+  const navMenu = document.getElementById("navMenu");
+  navMenu.classList.toggle("open");
+};
+
+const profileToggle = document.getElementById("profileToggle");
+const profileMenu = document.querySelector(".profile-menu");
+
+profileToggle.onclick = function(event) {
+  event.stopPropagation();
+  profileMenu.classList.toggle("is-open");
+  profileToggle.setAttribute("aria-expanded", profileMenu.classList.contains("is-open"));
+};
+
+document.addEventListener("click", function() {
+  profileMenu.classList.remove("is-open");
+  profileToggle.setAttribute("aria-expanded", "false");
+});
+
+(function () {
+  const chatShell = document.getElementById("assistantChatShell");
+  const messages = document.getElementById("assistantChatMessages");
+  const form = document.getElementById("assistantChatForm");
+  const input = document.getElementById("assistantChatInput");
+
+  if (!chatShell || !messages || !form || !input) {
+    return;
+  }
+
+  const context = JSON.parse(chatShell.dataset.chatContext || "{}");
+
+  function appendMessage(text, role) {
+    const bubble = document.createElement("div");
+    bubble.className = `assistant-chat-message ${role}`;
+    bubble.textContent = text;
+    bubble.style.whiteSpace = "pre-wrap";
+    bubble.style.wordBreak = "break-word";
+    messages.appendChild(bubble);
+    messages.scrollTop = messages.scrollHeight;
+    return bubble;
+  }
+
+  function hydrateExistingMessages() {
+    messages.querySelectorAll("[data-message]").forEach((msgDiv) => {
+      const text = msgDiv.dataset.message || "";
+      msgDiv.removeAttribute("data-message");
+      msgDiv.textContent = text;
+      msgDiv.style.whiteSpace = "pre-wrap";
+      msgDiv.style.wordBreak = "break-word";
+    });
+  }
+
+  async function sendMessage(raw) {
+    const text = raw.trim();
+    if (!text) {
+      return;
+    }
+
+    appendMessage(text, "user");
+    input.value = "";
+    input.disabled = true;
+
+    const sending = appendMessage("Typing...", "bot typing");
+
+    try {
+      const response = await fetch("/chatbot", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ message: text, context })
+      });
+
+      const data = await response.json();
+      sending.remove();
+      appendMessage(data.reply || "Assistant did not return a response.", "bot");
+    } catch (error) {
+      sending.remove();
+      appendMessage("Chat is temporarily unavailable. Please try again.", "bot");
+    } finally {
+      input.disabled = false;
+      input.focus();
+    }
+  }
+
+  hydrateExistingMessages();
+
+  form.addEventListener("submit", function (event) {
+    event.preventDefault();
+    sendMessage(input.value);
+  });
+
+  document.querySelectorAll("[data-prompt]").forEach((button) => {
+    button.addEventListener("click", function () {
+      sendMessage(button.dataset.prompt || "");
+    });
+  });
+
+  messages.scrollTop = messages.scrollHeight;
+})();
+</script>
+
+</body>
+</html>

@@ -1,0 +1,213 @@
+<div class="chatbot-widget" id="chatbotWidget" data-chat-context='{{ chatbot_context | default({}) | tojson }}' data-chat-history='{{ chatbot_history | default([]) | tojson }}'>
+  <button type="button" class="chatbot-launcher" id="chatbotLauncher" aria-expanded="false" aria-controls="chatbotPanel">
+    <span class="chatbot-launcher-icon">💬</span>
+    <span class="chatbot-launcher-text">Resume Assistant</span>
+  </button>
+
+  <section class="chatbot-panel" id="chatbotPanel" aria-hidden="true">
+    <header class="chatbot-header">
+      <div>
+        <div class="chatbot-title">HireLens Assistant</div>
+        <div class="chatbot-subtitle">Ask about score, keywords, or how to improve.</div>
+      </div>
+      <button type="button" class="chatbot-close" id="chatbotClose" aria-label="Close chat">×</button>
+    </header>
+
+    <div class="chatbot-messages" id="chatbotMessages" role="log" aria-live="polite"></div>
+
+    <div class="chatbot-quick-replies" id="chatbotQuickReplies">
+      <button type="button" class="chatbot-chip" data-chat-prompt="Rewrite my summary">Rewrite my summary</button>
+      <button type="button" class="chatbot-chip" data-chat-prompt="Rewrite one bullet point">Rewrite one bullet</button>
+      <button type="button" class="chatbot-chip" data-chat-prompt="Create interview questions">Interview Q&A</button>
+      <button type="button" class="chatbot-chip" data-chat-prompt="How can I improve my ATS score?">Improve ATS score</button>
+    </div>
+
+    <form class="chatbot-form" id="chatbotForm">
+      <input type="text" id="chatbotInput" class="chatbot-input" placeholder="Ask me anything about your resume..." autocomplete="off" />
+      <button type="submit" class="chatbot-send">Send</button>
+    </form>
+  </section>
+</div>
+
+<script>
+(function () {
+  const widget = document.getElementById("chatbotWidget");
+  if (!widget) {
+    return;
+  }
+
+  const launcher = document.getElementById("chatbotLauncher");
+  const panel = document.getElementById("chatbotPanel");
+  const closeButton = document.getElementById("chatbotClose");
+  const messages = document.getElementById("chatbotMessages");
+  const form = document.getElementById("chatbotForm");
+  const input = document.getElementById("chatbotInput");
+  const quickReplies = document.getElementById("chatbotQuickReplies");
+  const analysisContext = JSON.parse(widget.dataset.chatContext || "{}");
+  const savedHistory = JSON.parse(widget.dataset.chatHistory || "[]");
+
+  const fallbackIntro = analysisContext.score
+    ? `Your latest score is ${analysisContext.score}% (${analysisContext.rating}). Ask me what it means or how to improve.`
+    : "I can explain the upload flow, ATS score, report download, and resume improvements.";
+
+  function addMessage(text, role) {
+    const bubble = document.createElement("div");
+    bubble.className = `chatbot-message ${role}`;
+    
+    // Parse markdown-style formatting: **text** → <strong>text</strong>
+    // Split by ** and process each part
+    const parts = text.split(/(\*\*[^*]+\*\*)/g);
+    
+    parts.forEach(part => {
+      if (part.startsWith("**") && part.endsWith("**")) {
+        const content = part.slice(2, -2); // Remove ** markers
+        const strong = document.createElement("strong");
+        strong.textContent = content;
+        bubble.appendChild(strong);
+      } else {
+        bubble.appendChild(document.createTextNode(part));
+      }
+    });
+    
+    // Preserve line breaks and formatting
+    bubble.style.whiteSpace = "pre-wrap";
+    bubble.style.wordBreak = "break-word";
+    
+    messages.appendChild(bubble);
+    messages.scrollTop = messages.scrollHeight;
+    return bubble;
+  }
+
+  function renderSavedHistory() {
+    if (!Array.isArray(savedHistory) || !savedHistory.length) {
+      addMessage(fallbackIntro, "bot");
+      return;
+    }
+
+    savedHistory.forEach((entry) => {
+      if (!entry || !entry.message) {
+        return;
+      }
+
+      const role = entry.role === "assistant" ? "bot" : "user";
+      addMessage(entry.message, role);
+    });
+  }
+
+  async function loadPersistedHistory() {
+    if (Array.isArray(savedHistory) && savedHistory.length) {
+      return;
+    }
+
+    try {
+      const response = await fetch("/chatbot/history");
+
+      if (!response.ok) {
+        return;
+      }
+
+      const data = await response.json();
+      const history = Array.isArray(data.history) ? data.history : [];
+
+      if (!history.length) {
+        return;
+      }
+
+      messages.innerHTML = "";
+      history.forEach((entry) => {
+        if (!entry || !entry.message) {
+          return;
+        }
+
+        const role = entry.role === "assistant" ? "bot" : "user";
+        addMessage(entry.message, role);
+      });
+    } catch (error) {
+      return;
+    }
+  }
+
+  function setOpen(isOpen) {
+    widget.classList.toggle("is-open", isOpen);
+    launcher.setAttribute("aria-expanded", String(isOpen));
+    panel.setAttribute("aria-hidden", String(!isOpen));
+    if (isOpen) {
+      setTimeout(() => input.focus(), 50);
+    }
+  }
+
+  function setBusy(isBusy) {
+    input.disabled = isBusy;
+    form.querySelector("button[type='submit']").disabled = isBusy;
+    quickReplies.querySelectorAll("button").forEach((button) => {
+      button.disabled = isBusy;
+    });
+  }
+
+  async function sendMessage(message) {
+    const trimmed = message.trim();
+    if (!trimmed) {
+      return;
+    }
+
+    addMessage(trimmed, "user");
+    setBusy(true);
+    const typing = addMessage("Typing...", "bot typing");
+
+    try {
+      const response = await fetch("/chatbot", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          message: trimmed,
+          context: analysisContext
+        })
+      });
+
+      const data = await response.json();
+      typing.remove();
+      addMessage(data.reply || "I could not generate a response right now.", "bot");
+
+      if (Array.isArray(data.quick_replies) && data.quick_replies.length) {
+        quickReplies.innerHTML = data.quick_replies.map((reply) => (
+          `<button type="button" class="chatbot-chip" data-chat-prompt="${reply}">${reply}</button>`
+        )).join("");
+        bindQuickReplies();
+      }
+    } catch (error) {
+      typing.remove();
+      addMessage("The assistant is unavailable right now. Please try again.", "bot");
+    } finally {
+      setBusy(false);
+      input.value = "";
+      input.focus();
+    }
+  }
+
+  function bindQuickReplies() {
+    quickReplies.querySelectorAll("[data-chat-prompt]").forEach((button) => {
+      button.onclick = () => sendMessage(button.dataset.chatPrompt || "");
+    });
+  }
+
+  launcher.onclick = () => setOpen(!widget.classList.contains("is-open"));
+  closeButton.onclick = () => setOpen(false);
+
+  document.addEventListener("click", (event) => {
+    if (!widget.contains(event.target)) {
+      setOpen(false);
+    }
+  });
+
+  form.onsubmit = (event) => {
+    event.preventDefault();
+    sendMessage(input.value);
+  };
+
+  renderSavedHistory();
+  bindQuickReplies();
+  loadPersistedHistory();
+})();
+</script>

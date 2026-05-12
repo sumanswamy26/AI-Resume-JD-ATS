@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Analysis - HireLens AI</title>
+<link rel="stylesheet" href="/static/style.css">
+</head>
+<body {% raw %}{% endraw %}{% if dark_mode %}class="dark-mode"{% endif %}>
+
+<nav class="navbar">
+  <div class="navbar-brand">
+    <div class="logo">HireLens AI</div>
+    <span class="brand-tag">Resume Analyzer</span>
+  </div>
+  <div style="margin-left:auto; padding-right:18px;">
+    <a href="/dashboard">← Back to Dashboard</a>
+  </div>
+</nav>
+
+<div class="container" style="padding-top:24px;">
+
+  <section style="margin-bottom:20px;">
+    <h1>Analysis for {{ resume.name }}</h1>
+    <p style="color:#64748B;">{{ company_name }} | Analyzed on {{ analysis.created_at.strftime('%b %d, %Y') }}</p>
+
+    <div style="display:flex; gap:18px; align-items:center; margin-top:12px; flex-wrap:wrap;">
+      <div style="font-size:40px; font-weight:700; color:#0F766E;">
+        {{ analysis.match_score }}%
+      </div>
+      <div style="
+        font-size:18px;
+        font-weight:700;
+        padding:8px 12px;
+        border-radius:8px;
+        {% if fit_level == 'Perfect Fit' %}
+          background:#DBEAFE;
+          color:#1E40AF;
+        {% elif fit_level == 'Strong Fit' %}
+          background:#ECFEFF;
+          color:#0F766E;
+        {% elif fit_level == 'Good Fit' %}
+          background:#FEF3F2;
+          color:#B91C1C;
+        {% else %}
+          background:#F3F4F6;
+          color:#4B5563;
+        {% endif %}
+      ">{{ fit_level }}</div>
+      <div style="font-size:16px; font-weight:700;">{{ rating }}</div>
+      <a href="/download-report/{{ analysis.id }}" style="margin-left:20px; background:#ECFEFF; color:#0F766E; padding:8px 12px; border-radius:8px; text-decoration:none;">Download Report</a>
+    </div>
+
+  </section>
+
+  <section style="display:grid; grid-template-columns:1fr 320px; gap:20px;">
+
+    <div>
+      <h3>Matched Skills</h3>
+      {% if matched %}
+      <div style="display:flex; gap:8px; flex-wrap:wrap;">
+        {% for s in matched %}
+        <div style="background:#ECFEFF; color:#0F766E; padding:6px 8px; border-radius:8px; font-weight:600;">{{ s }}</div>
+        {% endfor %}
+      </div>
+      {% else %}
+      <p style="color:#64748B;">No matched skills detected.</p>
+      {% endif %}
+
+      <h3 style="margin-top:18px;">Missing Skills</h3>
+      {% if missing %}
+      <div style="display:flex; gap:8px; flex-wrap:wrap;">
+        {% for s in missing %}
+        <div style="background:#FEF3F2; color:#B91C1C; padding:6px 8px; border-radius:8px; font-weight:600;">{{ s }}</div>
+        {% endfor %}
+      </div>
+      {% else %}
+      <p style="color:#64748B;">No missing skills detected.</p>
+      {% endif %}
+
+      <h3 style="margin-top:18px;">Quick Recommendations</h3>
+      <ul>
+        {% for r in recommendations %}
+        <li>{{ r }}</li>
+        {% endfor %}
+      </ul>
+
+    </div>
+
+    <aside style="background:white; padding:16px; border-radius:12px; border:1px solid #E2E8F0;">
+      <h4>ATS Tips</h4>
+      <ul>
+        {% for t in ats_tips %}
+        <li style="margin-bottom:8px; color:#334155;">{{ t }}</li>
+        {% endfor %}
+      </ul>
+
+      <h4 style="margin-top:12px;">Suggested Keywords</h4>
+      {% if missing_keywords %}
+      <div style="display:flex; gap:6px; flex-wrap:wrap;">
+        {% for k in missing_keywords %}
+        <div style="background:#F1F5F9; padding:6px 8px; border-radius:8px;">{{ k }}</div>
+        {% endfor %}
+      </div>
+      {% else %}
+      <p style="color:#64748B;">No extra keywords suggested.</p>
+      {% endif %}
+
+      <h4 style="margin-top:12px;">Auto Suggestions</h4>
+      <ul>
+        {% for s in suggestions %}
+        <li style="margin-bottom:6px;">{{ s }}</li>
+        {% endfor %}
+      </ul>
+
+    </aside>
+
+  </section>
+
+</div>
+
+{% include "_chatbot_widget.html" %}
+
+</body>
+</html>
